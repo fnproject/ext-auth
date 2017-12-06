@@ -27,7 +27,7 @@ type SimpleAuth struct {
 }
 
 func (e *SimpleAuth) Name() string {
-	return "github.com/treeder/fn-ext-example/logspam"
+	return "github.com/treeder/fn-ext-auth/simple"
 }
 
 func (e *SimpleAuth) Setup(s fnext.ExtServer) error {
