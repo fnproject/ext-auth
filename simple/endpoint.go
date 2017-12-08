@@ -1,3 +1,15 @@
+package simple
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"os"
+	"time"
+
+	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/fnproject/fn/api/server"
+)
 
 // SimpleEndpoint is used for logging in. Returns a JWT token if successful.
 type SimpleEndpoint struct {
