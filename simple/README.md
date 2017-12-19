@@ -17,12 +17,30 @@ Try running the following commands to try it out:
 curl http://localhost:8080/v1/apps
 # Fails... :(
 
-# Login:
+# Login: this will create a user if one doesn't exist
 curl -H "Content-Type: application/json" -X POST -d '{"username":"johnny","password":"xyz"}' http://localhost:8080/v1/login
 
-# Grab token returned from above and try to access endpoint again
+# deploy a function
+fn init --runtime go gofunc
+cd gofunc
+fn deploy --app myapp --local
+# SHOULD FAIL
+
+export FN_TOKEN=YOUR_TOKEN
+fn deploy --app myapp --local
+# SHOULD WORK
+
+# Grab token returned from above and try to access another endpoint
 curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:8080/v1/apps
 # Success! :)
+
+# now make another user
+curl -H "Content-Type: application/json" -X POST -d '{"username":"tommy","password":"abc"}' http://localhost:8080/v1/login
+export FN_TOKEN=TOMMY_TOKEN
+fn deploy --app myapp --local
+# SHOULD FAIL
+fn deploy --app tommyapp --local
+# SHOULD WORK
 ```
 
 ## For Development

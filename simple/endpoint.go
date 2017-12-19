@@ -1,6 +1,7 @@
 package simple
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 
 // SimpleEndpoint is used for logging in. Returns a JWT token if successful.
 type SimpleEndpoint struct {
+	simple *SimpleAuth
 }
 
 func (e *SimpleEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -25,11 +27,8 @@ func (e *SimpleEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		server.HandleErrorResponse(ctx, w, err)
 		return
 	}
-	/////////////////////////////
-	// TODO: This is where you verify the credentials.
-	/////////////////////////////
 
-	user, created, err := authenticate(&login)
+	user, created, err := e.authenticate(ctx, &login)
 	if err != nil {
 		server.WriteError(ctx, w, http.StatusUnauthorized, err)
 		return
@@ -37,6 +36,7 @@ func (e *SimpleEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"iat":      time.Now().Unix(),
+		"user_id":  user.ID,
 		"username": user.Username,
 	})
 	tokenString, err := token.SignedString([]byte(os.Getenv(EnvSecret)))
@@ -53,16 +53,21 @@ func (e *SimpleEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(LoginResponse{Token: tokenString, Msg: msg})
 }
 
-func authenticate(login *Login) (*User, bool, error) {
-	user, err := findUser(login.Username, login.Password)
+func (e *SimpleEndpoint) authenticate(ctx context.Context, login *Login) (*User, bool, error) {
+	user, err := e.simple.findUser(ctx, login.Username, login.Password)
 	if err != nil {
 		return nil, false, err
 	}
 	if user != nil {
+		// check pass
+		err := CheckPasswordHash(user.PassHash, login.Password)
+		if err != nil {
+			return nil, false, err
+		}
 		return user, false, nil
 	}
-	// Since this is dumb, we'll just automatically create a user and return a token.
-	user, err = createUser(login.Username, login.Password)
+	// Since this is dumb, we'll just automatically create a user and return a token if user doesn't already exist.
+	user, err = e.simple.createUser(ctx, login.Username, login.Password)
 	if err != nil {
 		return nil, false, err
 	}
