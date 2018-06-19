@@ -66,7 +66,11 @@ func (e *SimpleEndpoint) authenticate(ctx context.Context, login *Login) (*User,
 		}
 		return user, false, nil
 	}
-	// Since this is dumb, we'll just automatically create a user and return a token if user doesn't already exist.
+	// Since this is dumb, we'll just automatically create a user and return a token if user doesn't already exist and the master token is corrent.
+	if login.MasterToken != os.Getenv(EnvMasterToken) {
+		fmt.Errorf("Master token mismatch.")
+		return nil, false, fmt.Errorf("Authentication Failed")
+	}
 	user, err = e.simple.createUser(ctx, login.Username, login.Password)
 	if err != nil {
 		return nil, false, err
@@ -75,8 +79,9 @@ func (e *SimpleEndpoint) authenticate(ctx context.Context, login *Login) (*User,
 }
 
 type Login struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username    string `json:"username"`
+	Password    string `json:"password"`
+	MasterToken string `json:"master_token"`
 }
 
 type LoginResponse struct {

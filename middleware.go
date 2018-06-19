@@ -77,7 +77,12 @@ func (m *SimpleMiddleware) Handle(next http.Handler) http.Handler {
 		if appNameV != nil {
 			appName := appNameV.(string)
 			// first check if app exists, if it doesn't, we'll just let anyone use it
-			app, err := m.simple.ds.GetApp(ctx, appName)
+			appId, err := m.simple.ds.GetAppID(ctx, appName)
+			if err != nil && err != models.ErrAppsNotFound { // too bad GetX() doesn't just return nil, nil. the way it is the extension developer needs to find every not found error...
+				server.WriteError(ctx, w, http.StatusInternalServerError, err)
+				return
+			}
+			app, err := m.simple.ds.GetAppByID(ctx, appId)
 			if err != nil && err != models.ErrAppsNotFound { // too bad GetX() doesn't just return nil, nil. the way it is the extension developer needs to find every not found error...
 				server.WriteError(ctx, w, http.StatusInternalServerError, err)
 				return
